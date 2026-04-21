@@ -1,47 +1,43 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import nodemailer from 'nodemailer'
-import crypto from 'crypto'
-
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-})
+// app/api/auth/register/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 
 export async function POST(req: NextRequest) {
-  const { username, email, password } = await req.json()
+  try {
+    const { username, email } = await req.json();
 
-  const existing = await prisma.user.findFirst({ where: { OR: [{ username }, { email }] } })
-  if (existing) return NextResponse.json({ error: 'Пользователь уже существует' }, { status: 400 })
-
-  const token = crypto.randomBytes(32).toString('hex')
-
-  const user = await prisma.user.create({
-    data: {
-      username,
-      email,
-      verificationToken: token,
+    if (!username || username.length < 3) {
+      return NextResponse.json({ error: "Никнейм должен быть минимум 3 символа" }, { status: 400 });
     }
-  })
 
-  // Отправка письма
-  await transporter.sendMail({
-    from: '"Pixel Battle" <no-reply@pixelbattle.ru>',
-    to: email,
-    subject: 'Подтвердите email — Pixel Battle',
-    html: `
-      <h2>Привет, ${username}!</h2>
-      <p>Кликни по ссылке для подтверждения:</p>
-      <a href="http://localhost:3000/api/auth/verify?token=${token}" style="background:#e11d48;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;">
-        Подтвердить email
-      </a>
-    `
-  })
+    const existingUser = await prisma.user.findFirst({
+      where: { 
+        OR: [{ username }, { email: email || undefined }]
+      }
+    });
 
-  return NextResponse.json({ success: true, message: 'Письмо отправлено' })
+    if (existingUser) {
+      return NextResponse.json({ error: "Пользователь с таким ником или email уже существует" }, { status: 400 });
+    }
+
+    const user = await prisma.user.create({
+      data: {
+        username,
+        email: email || `${username.toLowerCase()}@example.com`,
+      }
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: "Регистрация успешна",
+      user: {
+        id: user.id,
+        username: user.username,
+      }
+    });
+
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 });
+  }
 }
