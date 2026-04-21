@@ -1,0 +1,26 @@
+version: '3.8'
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: pixelbattle-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: pixelbattle
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+    environment:
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/pixelbattle?schema=public
+
+volumes:
+  postgres_data:

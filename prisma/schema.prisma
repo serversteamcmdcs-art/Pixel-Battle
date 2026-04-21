@@ -1,0 +1,33 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String   @id @default(cuid())
+  username        String   @unique
+  email           String   @unique
+  emailVerified   Boolean  @default(false)
+  verificationToken String? @unique
+  pixelsPlaced    Int      @default(0)
+  createdAt       DateTime @default(now())
+
+  pixels          Pixel[]
+}
+
+model Pixel {
+  id        String   @id @default(cuid())
+  x         Int
+  y         Int
+  color     String
+  userId    String
+  placedAt  DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([x, y])
+}
