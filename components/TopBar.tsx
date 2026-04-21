@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 type Tab = "Paint" | "Heatmap" | "Zones" | "Bans";
 
@@ -9,8 +9,8 @@ interface TopBarProps {
   onLogin: () => void;
   currentTab: Tab;
   onTabChange: (tab: Tab) => void;
-  onlineCount: number;
-  username?: string;           // ← Добавили этот пропс
+  username?: string;
+  onlineCount?: number;        // ← Сделали необязательным
 }
 
 export default function TopBar({
@@ -18,9 +18,19 @@ export default function TopBar({
   onLogin,
   currentTab,
   onTabChange,
-  onlineCount,
-  username = "Гость",         // ← Значение по умолчанию
+  username = "Гость",
+  onlineCount = 1247,          // ← Значение по умолчанию
 }: TopBarProps) {
+  // Имитация живого онлайна
+  const [online, setOnline] = useState(onlineCount);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setOnline(prev => Math.floor(prev + (Math.random() * 7 - 3)));
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div className="h-14 bg-white border-b flex items-center px-6 justify-between z-40">
       {/* Логотип */}
@@ -32,7 +42,7 @@ export default function TopBar({
       {/* Онлайн */}
       <div className="flex items-center gap-2 bg-green-100 text-green-700 px-4 py-1 rounded-full text-sm font-medium">
         <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-        {onlineCount.toLocaleString("ru-RU")} онлайн
+        {online.toLocaleString("ru-RU")} онлайн
       </div>
 
       {/* Вкладки */}
